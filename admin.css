@@ -1,0 +1,73 @@
+body.admin { background: #f6f3f4; font-size: 16px; }
+
+.admin-bar {
+  background: var(--ink); color: #fff;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px clamp(16px, 4vw, 40px);
+}
+.admin-bar h1 { font-family: var(--display); font-weight: 400; font-size: 1.4rem; }
+.btn-ghost-light { background: transparent; color: #fff; border-color: #fff; min-height: 40px; padding: 0 18px; }
+
+.wrap-wide { width: min(100% - 32px, 1120px); margin-inline: auto; }
+
+.login { max-width: 420px; padding: 64px 0; }
+.admin > .notice { margin-top: 24px; }
+
+.tabs { display: flex; gap: 4px; padding-top: 24px; border-bottom: 2px solid var(--ink); }
+.tabs button {
+  border: 0; background: transparent; padding: 10px 18px;
+  font: 700 1rem var(--body); color: var(--muted); cursor: pointer;
+  border-radius: 10px 10px 0 0;
+}
+.tabs button[aria-selected="true"] { background: var(--ink); color: #fff; }
+
+.filters { display: flex; gap: 8px; flex-wrap: wrap; padding: 20px 0; }
+.filter {
+  border: 1.5px solid var(--line); background: #fff; border-radius: var(--radius-pill);
+  padding: 6px 14px; font: 500 .92rem var(--body); cursor: pointer;
+}
+.filter.is-on { background: var(--pink); border-color: var(--pink); color: #fff; }
+
+.cards { display: grid; gap: 16px; padding-bottom: 64px; }
+@media (min-width: 900px) { .cards { grid-template-columns: 1fr 1fr; } }
+
+.card {
+  display: grid; grid-template-columns: 120px 1fr; gap: 16px;
+  background: #fff; border-radius: 14px; padding: 16px;
+}
+.card[data-status="검토 대기"] { border-left: 6px solid #b8b0b4; }
+.card[data-status="공개"] { border-left: 6px solid #22a35a; }
+.card[data-status="비공개"] { border-left: 6px solid var(--error); }
+.card[data-status="매칭 완료"] { border-left: 6px solid var(--pink); }
+
+.card-photo { width: 120px; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 10px; background: var(--blush); }
+.card-head { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.card-name { font-size: 1.15rem; }
+.card-status { width: auto; min-height: 36px; padding: 4px 10px; font-size: .9rem; }
+.card-intro { color: var(--muted); margin: 4px 0 8px; }
+
+.card dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 0; font-size: .92rem; }
+.card dt { color: var(--muted); }
+.card dd { margin: 0; white-space: pre-wrap; }
+
+.card-more { margin: 10px 0; }
+.card-more summary { cursor: pointer; font-weight: 500; color: var(--pink-deep); }
+.card-more dl { margin-top: 8px; }
+.card-extras { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.card-extras img, .card-extras video { width: 96px; height: 128px; object-fit: cover; border-radius: 8px; }
+
+.card-contact { background: var(--blush); border-radius: 10px; padding: 10px 12px; }
+.card-contact h4 { margin: 0 0 6px; font-size: .9rem; }
+
+@media (max-width: 520px) {
+  .card { grid-template-columns: 1fr; }
+  .card-photo { width: 100%; max-width: 240px; }
+}
+
+.fb-table { width: 100%; border-collapse: collapse; background: #fff; margin: 20px 0 64px; border-radius: 12px; overflow: hidden; }
+.fb-table th, .fb-table td { text-align: left; padding: 12px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: .94rem; }
+.fb-table th { background: var(--ink); color: #fff; font-weight: 500; }
+.fb-table td:nth-child(3) { white-space: pre-wrap; }
+.fb-table select { min-height: 36px; padding: 4px 8px; width: auto; }
+
+.empty { padding: 40px 0; color: var(--muted); }

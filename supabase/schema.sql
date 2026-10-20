@@ -1,0 +1,248 @@
+-- =====================================================================
+-- 선생님 이력서 소개팅 · Supabase 스키마
+-- Supabase 대시보드 → SQL Editor 에 통째로 붙여넣고 Run 하세요.
+-- 여러 번 실행해도 안전하도록 작성했습니다.
+-- =====================================================================
+
+create extension if not exists pgcrypto;
+
+-- ---------------------------------------------------------------------
+-- 1. 테이블
+-- ---------------------------------------------------------------------
+
+-- 이력서 (공개될 수 있는 정보만)
+create table if not exists public.resumes (
+  id                 uuid primary key,
+  created_at         timestamptz not null default now(),
+  status             text not null default '검토 대기'
+                     check (status in ('검토 대기', '공개', '비공개', '매칭 완료')),
+  nickname           text not null check (char_length(nickname) between 1 and 30),
+  intro              text not null check (char_length(intro) between 1 and 100),
+  gender             text not null check (gender in ('여성', '남성')),
+  age                int  not null check (age between 19 and 80),
+  height             int  check (height between 120 and 230),
+  region             text not null,
+  district           text,
+  job                text check (char_length(job) <= 60),
+  mbti               text,
+  photo_path         text not null,
+  extra_photo_paths  text[] not null default '{}',
+  weekend            text check (char_length(weekend) <= 1000),
+  keywords           text[] not null default '{}',
+  good_match         text not null check (char_length(good_match) between 1 and 1000),
+  bad_match          text not null check (char_length(bad_match) between 1 and 1000),
+  admin_note         text
+);
+
+-- 연락처 (운영자만 열람, 이력서와 1:1)
+create table if not exists public.contacts (
+  resume_id       uuid primary key references public.resumes(id) on delete cascade,
+  created_at      timestamptz not null default now(),
+  contact         text not null check (char_length(contact) between 2 and 60),
+  email           text check (email is null or email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
+  is_adult        boolean not null check (is_adult),
+  privacy_agreed  boolean not null check (privacy_agreed),
+  -- 보관 기한: 기본 수집일로부터 6개월 (README의 "보관 기간" 참고)
+  delete_after    date not null default ((now() + interval '6 months')::date)
+);
+
+-- 피드백
+create table if not exists public.feedback (
+  id          uuid primary key default gen_random_uuid(),
+  created_at  timestamptz not null default now(),
+  kind        text check (kind in ('좋았어요', '불편했어요', '제안해요', '기타')),
+  body        text not null check (char_length(body) between 1 and 2000),
+  handled     text not null default '확인 전' check (handled in ('확인 전', '확인함', '반영 완료'))
+);
+
+-- 관리자 명단 (여기에 들어간 이메일만 관리자 화면을 쓸 수 있어요)
+create table if not exists public.admins (
+  email text primary key
+);
+
+-- ---------------------------------------------------------------------
+-- 2. 관리자 판별 함수
+-- ---------------------------------------------------------------------
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.admins
+    where lower(email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+  );
+$$;
+
+-- ---------------------------------------------------------------------
+-- 3. 행 단위 보안 (RLS)
+--    방문자(anon)는 테이블을 직접 읽거나 쓸 수 없고,
+--    아래 4번의 제출 함수를 통해서만 저장할 수 있어요.
+-- ---------------------------------------------------------------------
+alter table public.resumes  enable row level security;
+alter table public.contacts enable row level security;
+alter table public.feedback enable row level security;
+alter table public.admins   enable row level security;
+
+drop policy if exists "admin all resumes"  on public.resumes;
+drop policy if exists "admin all contacts" on public.contacts;
+drop policy if exists "admin all feedback" on public.feedback;
+drop policy if exists "admin read admins"  on public.admins;
+
+create policy "admin all resumes"  on public.resumes  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy "admin all contacts" on public.contacts for all to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy "admin all feedback" on public.feedback for all to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy "admin read admins"  on public.admins   for select to authenticated using (public.is_admin());
+
+-- ---------------------------------------------------------------------
+-- 4. 제출 함수 (이력서 + 연락처를 한 번에, 둘 다 저장되거나 둘 다 안 되거나)
+-- ---------------------------------------------------------------------
+create or replace function public.submit_application(p_resume jsonb, p_contact jsonb)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_id        uuid := (p_resume ->> 'id')::uuid;
+  v_region    text := p_resume ->> 'region';
+  v_district  text := nullif(p_resume ->> 'district', '');
+  v_photo     text := p_resume ->> 'photo_path';
+  v_extras    text[] := coalesce(array(select jsonb_array_elements_text(p_resume -> 'extra_photo_paths')), '{}');
+  v_path      text;
+begin
+  if v_id is null then
+    raise exception '이력서 번호가 없어요.';
+  end if;
+
+  if v_region not in ('서울', '경기', '인천', '강원', '충청', '전라', '경상', '제주') then
+    raise exception '사는 지역을 다시 선택해 주세요.';
+  end if;
+
+  if v_region = '서울' and (v_district is null or v_district not in (
+      '강남구','강동구','강북구','강서구','관악구','광진구','구로구','금천구','노원구','도봉구',
+      '동대문구','동작구','마포구','서대문구','서초구','성동구','성북구','송파구','양천구','영등포구',
+      '용산구','은평구','종로구','중구','중랑구')) then
+    raise exception '서울은 사는 구를 선택해 주세요.';
+  end if;
+
+  if v_region = '경기' and (v_district is null or v_district not in (
+      '수원시','성남시','고양시','용인시','부천시','안산시','안양시','남양주시','화성시','평택시',
+      '의정부시','시흥시','파주시','김포시','광명시','광주시','군포시','하남시','오산시','이천시',
+      '안성시','의왕시','양주시','구리시','포천시','여주시','동두천시','과천시','가평군','양평군','연천군')) then
+    raise exception '경기는 사는 시·군을 선택해 주세요.';
+  end if;
+
+  if v_region not in ('서울', '경기') then
+    v_district := null;
+  end if;
+
+  -- 사진은 반드시 이 이력서 번호 폴더 안에 실제로 올라가 있어야 해요.
+  if v_photo is null or split_part(v_photo, '/', 1) <> v_id::text
+     or not exists (select 1 from storage.objects where bucket_id = 'photos' and name = v_photo) then
+    raise exception '대표 사진을 다시 올려 주세요.';
+  end if;
+
+  foreach v_path in array v_extras loop
+    if split_part(v_path, '/', 1) <> v_id::text
+       or not exists (select 1 from storage.objects where bucket_id = 'photos' and name = v_path) then
+      raise exception '추가 사진·영상을 다시 올려 주세요.';
+    end if;
+  end loop;
+
+  insert into public.resumes (
+    id, nickname, intro, gender, age, height, region, district, job, mbti,
+    photo_path, extra_photo_paths, weekend, keywords, good_match, bad_match
+  ) values (
+    v_id,
+    trim(p_resume ->> 'nickname'),
+    trim(p_resume ->> 'intro'),
+    p_resume ->> 'gender',
+    (p_resume ->> 'age')::int,
+    nullif(p_resume ->> 'height', '')::int,
+    v_region,
+    v_district,
+    nullif(trim(p_resume ->> 'job'), ''),
+    nullif(p_resume ->> 'mbti', ''),
+    v_photo,
+    v_extras,
+    nullif(trim(p_resume ->> 'weekend'), ''),
+    coalesce(array(select jsonb_array_elements_text(p_resume -> 'keywords')), '{}'),
+    trim(p_resume ->> 'good_match'),
+    trim(p_resume ->> 'bad_match')
+  );
+
+  insert into public.contacts (resume_id, contact, email, is_adult, privacy_agreed)
+  values (
+    v_id,
+    trim(p_contact ->> 'contact'),
+    nullif(trim(p_contact ->> 'email'), ''),
+    coalesce((p_contact ->> 'is_adult')::boolean, false),
+    coalesce((p_contact ->> 'privacy_agreed')::boolean, false)
+  );
+
+  return v_id;
+end;
+$$;
+
+create or replace function public.submit_feedback(p_kind text, p_body text)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  insert into public.feedback (kind, body) values (nullif(p_kind, ''), trim(p_body));
+$$;
+
+revoke all on function public.submit_application(jsonb, jsonb) from public;
+revoke all on function public.submit_feedback(text, text) from public;
+grant execute on function public.submit_application(jsonb, jsonb) to anon, authenticated;
+grant execute on function public.submit_feedback(text, text) to anon, authenticated;
+
+-- ---------------------------------------------------------------------
+-- 5. 사진 저장소 (비공개 버킷)
+--    방문자는 올리기만 가능, 보기·목록·삭제는 관리자만.
+-- ---------------------------------------------------------------------
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('photos', 'photos', false, 10485760,
+        array['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime'])
+on conflict (id) do update
+  set public = false,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "visitor upload photos" on storage.objects;
+drop policy if exists "admin read photos"     on storage.objects;
+drop policy if exists "admin delete photos"   on storage.objects;
+
+create policy "visitor upload photos" on storage.objects
+  for insert to anon, authenticated
+  with check (
+    bucket_id = 'photos'
+    and (storage.foldername(name))[1] ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  );
+
+create policy "admin read photos" on storage.objects
+  for select to authenticated
+  using (bucket_id = 'photos' and public.is_admin());
+
+create policy "admin delete photos" on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'photos' and public.is_admin());
+
+-- ---------------------------------------------------------------------
+-- 6. 관리자 등록 (본인 이메일로 바꿔서 실행)
+-- ---------------------------------------------------------------------
+-- insert into public.admins (email) values ('관리자이메일@example.com') on conflict do nothing;
+
+-- ---------------------------------------------------------------------
+-- 7. (선택) 보관 기한이 지난 연락처 자동 삭제
+--    Database → Extensions 에서 pg_cron 을 켠 뒤 아래 주석을 풀고 실행하세요.
+-- ---------------------------------------------------------------------
+-- select cron.schedule(
+--   'purge-expired-contacts',
+--   '0 3 * * *',
+--   $$ delete from public.contacts where delete_after < current_date $$
+-- );

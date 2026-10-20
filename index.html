@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>선생님 이력서 소개팅</title>
+  <meta name="description" content="여선생님과 자기 일에 진심인 남성을 이어주는 이력서 기반 소개팅">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#apply">이력서 쓰러 바로 가기</a>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="hero-brand">선생님 이력서 소개팅</p>
+      <h1 class="hero-title">사진 1장,<br>조건 5개로는<br>다 담을 수 없는<br>당신을 위해</h1>
+      <a class="btn btn-pink hero-cta" href="#apply">이력서 쓰기</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="intro wrap">
+      <p class="lead">학교에서는 아이들을 챙기느라, 퇴근 후엔 수업 준비하느라 바쁜 선생님들. 좋은 사람을 만날 기회는 생각보다 많지 않죠.</p>
+      <p>선생님 이력서 소개팅은 여선생님과 자기 일에 진심인 남성을 이어주는 이력서 기반 소개팅이에요. 사진 한 장으로 판단하는 대신, 한 사람의 취향과 가치관이 담긴 이력서를 천천히 읽고 마음이 가는 사람을 만나보세요.</p>
+    </section>
+
+    <section class="wrap two-col">
+      <div>
+        <h2>이런 분들을 위해 만들었어요</h2>
+        <dl class="who">
+          <dt>여선생님</dt>
+          <dd>바쁜 학교생활 속에서도 진지하고 안정적인 만남을 원하는 분</dd>
+          <dt>남성 회원</dt>
+          <dd>자기 분야에서 성실하게 커리어를 쌓아가며, 선생님이라는 직업을 존중하는 분</dd>
+        </dl>
+      </div>
+      <div>
+        <h2>이용 방법</h2>
+        <ol class="howto">
+          <li><strong>이력서 작성</strong>기본 정보와 나를 소개하는 이야기를 적어요.</li>
+          <li><strong>연락처 제출</strong>이어서 연락처를 남겨요. 연락처는 비공개로 보관돼요.</li>
+          <li><strong>서로 동의하면 매칭</strong>양쪽 모두 동의했을 때만 운영자가 연락처를 전해드려요.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="wrap promise">
+      <h2>우리가 지키는 약속</h2>
+      <ul>
+        <li><strong>신원 확인</strong> 여선생님은 재직 확인, 남성 회원은 직장 확인을 거친 분만 공개해요.</li>
+        <li><strong>연락처 비공개</strong> 연락처는 이력서에 노출되지 않고, 매칭 시에만 운영자를 통해 전달돼요.</li>
+        <li><strong>정보 보호</strong> 다른 회원의 이력서를 캡처하거나 외부에 공유하는 것은 금지예요.</li>
+        <li><strong>존중하는 만남</strong> 허위 정보나 무례한 언행이 확인되면 이용이 제한돼요.</li>
+        <li><strong>성인만 참여</strong> 만 19세 이상만 참여할 수 있어요.</li>
+      </ul>
+      <blockquote>조건보다 대화가 통하는 사람, 스펙보다 결이 맞는 사람.<br>이력서 한 장으로 시작되는 진짜 만남을 응원해요.</blockquote>
+    </section>
+
+    <!-- ===================== 신청서 ===================== -->
+    <section id="apply" class="apply" aria-labelledby="apply-title">
+      <div class="wrap">
+        <h2 id="apply-title" class="apply-title">이력서 쓰기</h2>
+        <p id="config-warning" class="notice" hidden>아직 저장소가 연결되지 않았어요. config.js에 Supabase 주소와 키를 넣으면 제출할 수 있어요.</p>
+
+        <ol class="stepper" aria-label="진행 단계">
+          <li data-step="1" aria-current="step"><span>1</span>이력서</li>
+          <li data-step="2"><span>2</span>연락처</li>
+          <li data-step="3"><span>3</span>완료</li>
+        </ol>
+
+        <form id="apply-form" class="sheet" novalidate>
+          <!-- STEP 1 · 이력서 -->
+          <fieldset class="step" data-step="1">
+            <legend class="sr-only">이력서</legend>
+
+            <h3 class="sheet-head">기본 정보</h3>
+
+            <div class="field">
+              <label for="nickname">닉네임 <em>필수</em></label>
+              <p class="hint">이력서에 표시될 이름이에요. 실명은 쓰지 마세요.</p>
+              <input id="nickname" name="nickname" type="text" maxlength="30" required autocomplete="off">
+            </div>
+
+            <div class="field">
+              <label for="intro">한줄로 나를 소개한다면? <em>필수</em></label>
+              <p class="hint">예) 자유로운 도시 여행자</p>
+              <input id="intro" name="intro" type="text" maxlength="100" required>
+            </div>
+
+            <div class="row">
+              <fieldset class="field">
+                <legend>성별 <em>필수</em></legend>
+                <div class="choice-row">
+                  <label class="chip"><input type="radio" name="gender" value="여성" required><span>여성</span></label>
+                  <label class="chip"><input type="radio" name="gender" value="남성"><span>남성</span></label>
+                </div>
+              </fieldset>
+              <div class="field">
+                <label for="age">나이 (만) <em>필수</em></label>
+                <input id="age" name="age" type="number" inputmode="numeric" min="19" max="80" required>
+              </div>
+              <div class="field">
+                <label for="height">키 (cm)</label>
+                <input id="height" name="height" type="number" inputmode="numeric" min="120" max="230">
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label for="region">사는 지역 <em>필수</em></label>
+                <select id="region" name="region" required>
+                  <option value="">선택하세요</option>
+                  <option>서울</option><option>경기</option><option>인천</option><option>강원</option>
+                  <option>충청</option><option>전라</option><option>경상</option><option>제주</option>
+                </select>
+              </div>
+              <div class="field" id="district-field" hidden>
+                <label for="district" id="district-label">사는 구 <em>필수</em></label>
+                <select id="district" name="district"></select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label for="job">직업</label>
+                <p class="hint">예) 초등학교 교사, IT 회사 기획자</p>
+                <input id="job" name="job" type="text" maxlength="60">
+              </div>
+              <div class="field">
+                <label for="mbti">MBTI</label>
+                <select id="mbti" name="mbti">
+                  <option value="">선택 안 함</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="photo">대표 사진 <em>필수</em></label>
+              <p class="hint">나를 잘 보여주는 사진 1장. 본인 사진만 올려 주세요.</p>
+              <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required>
+              <img id="photo-preview" class="photo-preview" alt="선택한 대표 사진 미리보기" hidden>
+            </div>
+
+            <h3 class="sheet-head">About Me</h3>
+
+            <div class="field">
+              <label for="weekend">주말을 보내는 방법</label>
+              <textarea id="weekend" name="weekend" rows="3" maxlength="1000"></textarea>
+            </div>
+
+            <fieldset class="field">
+              <legend>나를 설명하는 키워드</legend>
+              <p class="hint">해당하는 걸 모두 골라 주세요.</p>
+              <div class="choice-row wrap-row" id="keywords"></div>
+            </fieldset>
+
+            <div class="field">
+              <label for="good_match">이런 사람과 잘 맞아요 <em>필수</em></label>
+              <textarea id="good_match" name="good_match" rows="3" maxlength="1000" required></textarea>
+            </div>
+
+            <div class="field">
+              <label for="bad_match">이런 사람과 안 맞아요 <em>필수</em></label>
+              <textarea id="bad_match" name="bad_match" rows="3" maxlength="1000" required></textarea>
+            </div>
+
+            <div class="field">
+              <label for="extras">추가 사진·영상</label>
+              <p class="hint">최대 4개. 사진은 자동으로 줄여서 올라가고, 영상은 10MB 이하만 가능해요.</p>
+              <input id="extras" name="extras" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" multiple>
+            </div>
+
+            <div class="actions">
+              <button type="button" class="btn btn-pink" data-next>다음: 연락처 쓰기</button>
+            </div>
+          </fieldset>
+
+          <!-- STEP 2 · 연락처 -->
+          <fieldset class="step" data-step="2" hidden>
+            <legend class="sr-only">연락처</legend>
+            <h3 class="sheet-head">연락처</h3>
+            <p class="private-note">여기부터는 다른 회원에게 절대 보이지 않아요. 매칭이 성사됐을 때만 운영자가 상대에게 전달해요.</p>
+
+            <div class="field">
+              <label for="contact">연락처 <em>필수</em></label>
+              <p class="hint">카카오톡 ID 또는 전화번호</p>
+              <input id="contact" name="contact" type="text" maxlength="60" required autocomplete="tel">
+            </div>
+
+            <div class="field">
+              <label for="email">이메일</label>
+              <input id="email" name="email" type="email" maxlength="120" autocomplete="email">
+            </div>
+
+            <div class="field">
+              <label class="check"><input type="checkbox" name="is_adult" id="is_adult" required><span>만 19세 이상입니다 <em>필수</em></span></label>
+            </div>
+
+            <div class="field">
+              <label class="check"><input type="checkbox" name="privacy_agreed" id="privacy_agreed" required><span>연락처를 매칭 전달 목적으로만 수집·이용하고, 수집일로부터 <b id="retention-months">6</b>개월 후 또는 요청 시 즉시 파기하는 데 동의합니다 <em>필수</em></span></label>
+            </div>
+
+            <p id="submit-error" class="error" role="alert" hidden></p>
+
+            <div class="actions">
+              <button type="button" class="btn btn-ghost" data-prev>이전: 이력서 고치기</button>
+              <button type="submit" class="btn btn-pink" id="submit-btn">이력서 제출하기</button>
+            </div>
+          </fieldset>
+
+          <!-- STEP 3 · 완료 -->
+          <div class="step done" data-step="3" hidden tabindex="-1">
+            <h3>이력서를 제출했어요</h3>
+            <p>운영자가 확인한 뒤 공개돼요. 마음이 맞는 분이 나타나면 남겨주신 연락처로 알려드릴게요.</p>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ===================== 피드백 ===================== -->
+    <section class="wrap feedback" aria-labelledby="fb-title">
+      <h2 id="fb-title">피드백 남기기</h2>
+      <p>좋았던 점, 불편했던 점, 바라는 점을 자유롭게 알려주세요. 익명으로 전달돼요.</p>
+      <form id="feedback-form" novalidate>
+        <div class="choice-row">
+          <label class="chip"><input type="radio" name="kind" value="좋았어요"><span>좋았어요</span></label>
+          <label class="chip"><input type="radio" name="kind" value="불편했어요"><span>불편했어요</span></label>
+          <label class="chip"><input type="radio" name="kind" value="제안해요"><span>제안해요</span></label>
+          <label class="chip"><input type="radio" name="kind" value="기타"><span>기타</span></label>
+        </div>
+        <label for="fb-body" class="sr-only">피드백 내용</label>
+        <textarea id="fb-body" name="body" rows="4" maxlength="2000" required placeholder="피드백 내용"></textarea>
+        <div class="actions">
+          <button type="submit" class="btn btn-dark">피드백 보내기</button>
+          <p id="fb-status" class="status" role="status"></p>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <footer class="foot wrap">
+    <p>선생님 이력서 소개팅</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

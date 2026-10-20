@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>운영자 · 선생님 이력서 소개팅</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin">
+  <header class="admin-bar">
+    <h1>운영자</h1>
+    <button type="button" class="btn btn-ghost-light" id="logout" hidden>로그아웃</button>
+  </header>
+
+  <!-- 로그인 -->
+  <section id="login-view" class="wrap login" hidden>
+    <h2>운영자 로그인</h2>
+    <form id="login-form">
+      <div class="field">
+        <label for="login-email">이메일</label>
+        <input id="login-email" type="email" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="login-pw">비밀번호</label>
+        <input id="login-pw" type="password" required autocomplete="current-password">
+      </div>
+      <p id="login-error" class="error" role="alert" hidden></p>
+      <button class="btn btn-pink" type="submit">로그인</button>
+    </form>
+  </section>
+
+  <p id="config-warning" class="wrap notice" hidden>config.js에 Supabase 주소와 키를 넣어야 관리자 화면을 쓸 수 있어요.</p>
+
+  <!-- 결과 -->
+  <main id="data-view" hidden>
+    <nav class="tabs wrap-wide" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="resumes">이력서 <span id="count-resumes"></span></button>
+      <button role="tab" aria-selected="false" data-tab="feedback">피드백 <span id="count-feedback"></span></button>
+    </nav>
+
+    <section id="tab-resumes" class="wrap-wide" role="tabpanel">
+      <div class="filters" role="group" aria-label="상태로 보기">
+        <button class="filter is-on" data-status="">전체</button>
+        <button class="filter" data-status="검토 대기">검토 대기</button>
+        <button class="filter" data-status="공개">공개</button>
+        <button class="filter" data-status="비공개">비공개</button>
+        <button class="filter" data-status="매칭 완료">매칭 완료</button>
+      </div>
+      <div id="resume-list" class="cards"></div>
+      <p id="resume-empty" class="empty" hidden>아직 들어온 이력서가 없어요. 이력서 링크를 공유해 보세요.</p>
+    </section>
+
+    <section id="tab-feedback" class="wrap-wide" role="tabpanel" hidden>
+      <table class="fb-table">
+        <thead><tr><th>날짜</th><th>유형</th><th>내용</th><th>처리</th></tr></thead>
+        <tbody id="feedback-list"></tbody>
+      </table>
+      <p id="feedback-empty" class="empty" hidden>아직 들어온 피드백이 없어요.</p>
+    </section>
+  </main>
+
+  <template id="card-tpl">
+    <article class="card">
+      <img class="card-photo" alt="">
+      <div class="card-body">
+        <header class="card-head">
+          <h3 class="card-name"></h3>
+          <select class="card-status" aria-label="상태 바꾸기">
+            <option>검토 대기</option><option>공개</option><option>비공개</option><option>매칭 완료</option>
+          </select>
+        </header>
+        <p class="card-intro"></p>
+        <dl class="card-meta"></dl>
+        <details class="card-more">
+          <summary>이력서 전체 보기</summary>
+          <dl class="card-detail"></dl>
+          <div class="card-extras"></div>
+        </details>
+        <div class="card-contact">
+          <h4>연락처 (비공개)</h4>
+          <dl class="contact-detail"></dl>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
