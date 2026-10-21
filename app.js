@@ -260,7 +260,8 @@
         bad_match: fd.get("bad_match"),
       };
       const contact = {
-        contact: fd.get("contact"),
+        // 전화번호처럼 숫자·하이픈·공백만 있으면 숫자만 남겨요 (카카오톡 ID는 그대로)
+        contact: /^[0-9\-\s]+$/.test(fd.get("contact").trim()) ? fd.get("contact").replace(/\D/g, "") : fd.get("contact"),
         email: fd.get("email") || "",
         is_adult: $("#is_adult").checked,
         privacy_agreed: $("#privacy_agreed").checked,
