@@ -95,6 +95,16 @@
     dl.append(dt, dd);
   }
 
+  // 생년월일이 있으면 오늘(한국 시간) 기준 만 나이, 없으면 제출 당시 나이
+  function currentAge(x) {
+    if (!x.birth_date) return x.age;
+    const [y, m, d] = x.birth_date.split("-").map(Number);
+    const t = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date()).split("-").map(Number);
+    let a = t[0] - y;
+    if (t[1] < m || (t[1] === m && t[2] < d)) a -= 1;
+    return a;
+  }
+
   const fmtDate = (s) => new Date(s).toLocaleDateString("ko-KR", { year: "numeric", month: "short", day: "numeric" });
 
   function renderResumes() {
@@ -107,11 +117,12 @@
     shown.forEach((x) => {
       const node = tpl.content.firstElementChild.cloneNode(true);
       node.dataset.status = x.status;
-      $(".card-name", node).textContent = `${x.nickname} · ${x.gender} ${x.age}세`;
+      $(".card-name", node).textContent = `${x.nickname} · ${x.gender} 만 ${currentAge(x)}세`;
       $(".card-intro", node).textContent = x.intro;
 
       const meta = $(".card-meta", node);
       addRow(meta, "지역", [x.region, x.district].filter(Boolean).join(" "));
+      addRow(meta, "생년월일", x.birth_date);
       addRow(meta, "만남 가능", x.meet_regions);
       addRow(meta, "원하는 나이",
         x.pref_age_min || x.pref_age_max ? `${x.pref_age_min ?? "?"}~${x.pref_age_max ?? "?"}세` : "");

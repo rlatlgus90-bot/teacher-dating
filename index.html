@@ -104,14 +104,24 @@
                 </div>
               </fieldset>
               <div class="field">
-                <label for="age">나이 (만) <em>필수</em></label>
-                <input id="age" name="age" type="number" inputmode="numeric" min="19" max="80" required>
-              </div>
-              <div class="field">
                 <label for="height">키 (cm)</label>
                 <input id="height" name="height" type="number" inputmode="numeric" min="120" max="230">
               </div>
             </div>
+
+            <fieldset class="field" id="birth-field">
+              <legend>생년월일 <em>필수</em></legend>
+              <p class="hint">이력서에는 생년월일 대신 만 나이만 보여요.</p>
+              <div class="birth-row">
+                <label class="sr-only" for="birth_y">태어난 해</label>
+                <select id="birth_y" name="birth_y" required><option value="">년</option></select>
+                <label class="sr-only" for="birth_m">태어난 달</label>
+                <select id="birth_m" name="birth_m" required><option value="">월</option></select>
+                <label class="sr-only" for="birth_d">태어난 날</label>
+                <select id="birth_d" name="birth_d" required><option value="">일</option></select>
+              </div>
+              <p class="age-result" id="age-result" aria-live="polite" hidden></p>
+            </fieldset>
 
             <div class="row">
               <div class="field">

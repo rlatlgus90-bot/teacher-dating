@@ -38,6 +38,7 @@ create table if not exists public.resumes (
 alter table public.resumes add column if not exists meet_regions text[] not null default '{}';
 alter table public.resumes add column if not exists pref_age_min int;
 alter table public.resumes add column if not exists pref_age_max int;
+alter table public.resumes add column if not exists birth_date date;
 alter table public.resumes drop constraint if exists resumes_meet_regions_check;
 alter table public.resumes add constraint resumes_meet_regions_check
   check (meet_regions <@ array['서울','경기','인천','강원','충청','전라','경상','제주']::text[]);
@@ -127,10 +128,25 @@ declare
   v_meet      text[] := coalesce(array(select distinct jsonb_array_elements_text(coalesce(p_resume -> 'meet_regions', '[]'::jsonb))), '{}');
   v_age_min   int := nullif(p_resume ->> 'pref_age_min', '')::int;
   v_age_max   int := nullif(p_resume ->> 'pref_age_max', '')::int;
+  v_birth     date := nullif(p_resume ->> 'birth_date', '')::date;
+  v_age       int;
   v_path      text;
 begin
   if v_id is null then
     raise exception '이력서 번호가 없어요.';
+  end if;
+
+  -- 생년월일이 있으면 서버에서 만 나이를 다시 계산해요 (한국 시간 기준)
+  if v_birth is not null then
+    v_age := extract(year from age((now() at time zone 'Asia/Seoul')::date, v_birth))::int;
+  else
+    v_age := (p_resume ->> 'age')::int;
+  end if;
+  if v_age is null or v_age < 19 then
+    raise exception '만 19세 이상만 참여할 수 있어요.';
+  end if;
+  if v_age > 80 then
+    raise exception '생년월일을 다시 확인해 주세요.';
   end if;
 
   if v_region not in ('서울', '경기', '인천', '강원', '충청', '전라', '경상', '제주') then
@@ -181,13 +197,13 @@ begin
   insert into public.resumes (
     id, nickname, intro, gender, age, height, region, district, job, mbti,
     photo_path, extra_photo_paths, weekend, keywords, good_match, bad_match,
-    meet_regions, pref_age_min, pref_age_max
+    meet_regions, pref_age_min, pref_age_max, birth_date
   ) values (
     v_id,
     trim(p_resume ->> 'nickname'),
     trim(p_resume ->> 'intro'),
     p_resume ->> 'gender',
-    (p_resume ->> 'age')::int,
+    v_age,
     nullif(p_resume ->> 'height', '')::int,
     v_region,
     v_district,
@@ -201,7 +217,8 @@ begin
     trim(p_resume ->> 'bad_match'),
     v_meet,
     v_age_min,
-    v_age_max
+    v_age_max,
+    v_birth
   );
 
   insert into public.contacts (resume_id, contact, email, is_adult, privacy_agreed)

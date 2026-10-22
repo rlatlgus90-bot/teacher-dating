@@ -50,6 +50,58 @@
   });
   const meetInputs = () => $$('input[name="meet_regions"]', meetBox);
 
+  // ---------- 생년월일 → 만 나이 ----------
+  const MIN_AGE = 19, MAX_AGE = 80;
+  const birthY = $("#birth_y"), birthM = $("#birth_m"), birthD = $("#birth_d");
+  const ageResult = $("#age-result");
+
+  // 한국 시간 기준 오늘 날짜
+  function seoulToday() {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit",
+    }).formatToParts(new Date());
+    const get = (t) => Number(parts.find((p) => p.type === t).value);
+    return { y: get("year"), m: get("month"), d: get("day") };
+  }
+
+  function manAge(y, m, d) {
+    const t = seoulToday();
+    let a = t.y - y;
+    if (t.m < m || (t.m === m && t.d < d)) a -= 1;
+    return a;
+  }
+
+  const thisYear = seoulToday().y;
+  for (let y = thisYear - MIN_AGE; y >= thisYear - MAX_AGE; y--) birthY.add(new Option(`${y}년`, String(y)));
+  for (let m = 1; m <= 12; m++) birthM.add(new Option(`${m}월`, String(m)));
+  function fillDays() {
+    const y = Number(birthY.value), m = Number(birthM.value);
+    const last = y && m ? new Date(y, m, 0).getDate() : 31;
+    const keep = birthD.value;
+    birthD.length = 1;
+    for (let d = 1; d <= last; d++) birthD.add(new Option(`${d}일`, String(d)));
+    birthD.value = Number(keep) <= last ? keep : "";
+  }
+  fillDays();
+
+  function birthInfo() {
+    const y = Number(birthY.value), m = Number(birthM.value), d = Number(birthD.value);
+    if (!y || !m || !d) return null;
+    const pad = (n) => String(n).padStart(2, "0");
+    return { date: `${y}-${pad(m)}-${pad(d)}`, age: manAge(y, m, d) };
+  }
+
+  function updateBirth() {
+    fillDays();
+    const info = birthInfo();
+    if (!info) { ageResult.hidden = true; return; }
+    ageResult.hidden = false;
+    ageResult.textContent = info.age < MIN_AGE
+      ? `만 ${info.age}세 · 만 19세 이상만 참여할 수 있어요.`
+      : `만 ${info.age}세`;
+  }
+  [birthY, birthM, birthD].forEach((el) => el.addEventListener("change", updateBirth));
+
   // ---------- 지역 → 구/시·군 ----------
   const regionSel = $("#region");
   const districtField = $("#district-field");
@@ -145,6 +197,18 @@
         firstBad = firstBad || el;
       }
     });
+    // 생년월일: 만 19세 이상
+    if ($("#birth_y", stepEl)) {
+      // 년·월·일 중 여러 칸이 비어도 안내는 한 번만
+      const birthErrs = $$(".field-error", $("#birth-field"));
+      birthErrs.slice(1).forEach((n) => n.remove());
+      if (birthErrs.length) birthErrs[0].textContent = "생년월일을 모두 골라 주세요.";
+      const info = birthInfo();
+      if (info && info.age < MIN_AGE) {
+        showError(birthD, "만 19세 이상만 참여할 수 있어요.");
+        firstBad = firstBad || birthD;
+      }
+    }
     // 만날 수 있는 지역: 하나 이상
     const meetFirst = $('input[name="meet_regions"]', stepEl);
     if (meetFirst && !meetInputs().some((i) => i.checked)) {
@@ -277,7 +341,8 @@
         nickname: fd.get("nickname"),
         intro: fd.get("intro"),
         gender: fd.get("gender"),
-        age: fd.get("age"),
+        birth_date: birthInfo().date,
+        age: birthInfo().age,
         height: fd.get("height") || "",
         region: fd.get("region"),
         district: fd.get("district") || "",
@@ -384,6 +449,7 @@
       if (name === "region" || DRAFT_SKIP.has(name)) return;
       setValue(name, data[name]);
     });
+    updateBirth();
     draftNotice.hidden = false;
   }
 
@@ -393,6 +459,7 @@
     preview.hidden = true;
     districtField.hidden = true;
     districtSel.required = false;
+    updateBirth();
     $$(".field-error", form).forEach((n) => n.remove());
     $$(".invalid", form).forEach((n) => n.classList.remove("invalid"));
     draftNotice.hidden = true;
