@@ -56,9 +56,12 @@ create table if not exists public.contacts (
   email           text check (email is null or email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
   is_adult        boolean not null check (is_adult),
   privacy_agreed  boolean not null check (privacy_agreed),
+  rules_agreed    boolean not null default false,
   -- 보관 기한: 기본 수집일로부터 6개월 (README의 "보관 기간" 참고)
   delete_after    date not null default ((now() + interval '6 months')::date)
 );
+
+alter table public.contacts add column if not exists rules_agreed boolean not null default false;
 
 -- 피드백
 create table if not exists public.feedback (
@@ -221,13 +224,14 @@ begin
     v_birth
   );
 
-  insert into public.contacts (resume_id, contact, email, is_adult, privacy_agreed)
+  insert into public.contacts (resume_id, contact, email, is_adult, privacy_agreed, rules_agreed)
   values (
     v_id,
     trim(p_contact ->> 'contact'),
     nullif(trim(p_contact ->> 'email'), ''),
     coalesce((p_contact ->> 'is_adult')::boolean, false),
-    coalesce((p_contact ->> 'privacy_agreed')::boolean, false)
+    coalesce((p_contact ->> 'privacy_agreed')::boolean, false),
+    coalesce((p_contact ->> 'rules_agreed')::boolean, false)
   );
 
   return v_id;

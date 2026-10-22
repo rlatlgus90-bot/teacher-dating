@@ -141,6 +141,7 @@
       if (x.contact) {
         addRow(cd, "연락처", x.contact.contact);
         addRow(cd, "이메일", x.contact.email);
+        addRow(cd, "주의사항 동의", x.contact.rules_agreed ? "동의함" : "기록 없음");
         addRow(cd, "파기 예정", fmtDate(x.contact.delete_after));
       } else {
         addRow(cd, "연락처", "없음");
