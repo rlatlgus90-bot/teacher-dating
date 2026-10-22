@@ -34,6 +34,19 @@ create table if not exists public.resumes (
   admin_note         text
 );
 
+-- 추가 항목 (기존 테이블에도 안전하게 붙도록 따로 둬요)
+alter table public.resumes add column if not exists meet_regions text[] not null default '{}';
+alter table public.resumes add column if not exists pref_age_min int;
+alter table public.resumes add column if not exists pref_age_max int;
+alter table public.resumes drop constraint if exists resumes_meet_regions_check;
+alter table public.resumes add constraint resumes_meet_regions_check
+  check (meet_regions <@ array['서울','경기','인천','강원','충청','전라','경상','제주']::text[]);
+alter table public.resumes drop constraint if exists resumes_pref_age_check;
+alter table public.resumes add constraint resumes_pref_age_check
+  check ((pref_age_min is null or pref_age_min between 19 and 80)
+     and (pref_age_max is null or pref_age_max between 19 and 80)
+     and (pref_age_min is null or pref_age_max is null or pref_age_min <= pref_age_max));
+
 -- 연락처 (운영자만 열람, 이력서와 1:1)
 create table if not exists public.contacts (
   resume_id       uuid primary key references public.resumes(id) on delete cascade,
@@ -111,6 +124,9 @@ declare
   v_district  text := nullif(p_resume ->> 'district', '');
   v_photo     text := p_resume ->> 'photo_path';
   v_extras    text[] := coalesce(array(select jsonb_array_elements_text(p_resume -> 'extra_photo_paths')), '{}');
+  v_meet      text[] := coalesce(array(select distinct jsonb_array_elements_text(coalesce(p_resume -> 'meet_regions', '[]'::jsonb))), '{}');
+  v_age_min   int := nullif(p_resume ->> 'pref_age_min', '')::int;
+  v_age_max   int := nullif(p_resume ->> 'pref_age_max', '')::int;
   v_path      text;
 begin
   if v_id is null then
@@ -139,6 +155,16 @@ begin
     v_district := null;
   end if;
 
+  if not (v_meet <@ array['서울','경기','인천','강원','충청','전라','경상','제주']::text[]) then
+    raise exception '만날 수 있는 지역을 다시 선택해 주세요.';
+  end if;
+
+  if (v_age_min is not null and v_age_min not between 19 and 80)
+     or (v_age_max is not null and v_age_max not between 19 and 80)
+     or (v_age_min is not null and v_age_max is not null and v_age_min > v_age_max) then
+    raise exception '원하는 상대 나이를 다시 확인해 주세요.';
+  end if;
+
   -- 사진은 반드시 이 이력서 번호 폴더 안에 실제로 올라가 있어야 해요.
   if v_photo is null or split_part(v_photo, '/', 1) <> v_id::text
      or not exists (select 1 from storage.objects where bucket_id = 'photos' and name = v_photo) then
@@ -154,7 +180,8 @@ begin
 
   insert into public.resumes (
     id, nickname, intro, gender, age, height, region, district, job, mbti,
-    photo_path, extra_photo_paths, weekend, keywords, good_match, bad_match
+    photo_path, extra_photo_paths, weekend, keywords, good_match, bad_match,
+    meet_regions, pref_age_min, pref_age_max
   ) values (
     v_id,
     trim(p_resume ->> 'nickname'),
@@ -171,7 +198,10 @@ begin
     nullif(trim(p_resume ->> 'weekend'), ''),
     coalesce(array(select jsonb_array_elements_text(p_resume -> 'keywords')), '{}'),
     trim(p_resume ->> 'good_match'),
-    trim(p_resume ->> 'bad_match')
+    trim(p_resume ->> 'bad_match'),
+    v_meet,
+    v_age_min,
+    v_age_max
   );
 
   insert into public.contacts (resume_id, contact, email, is_adult, privacy_agreed)

@@ -8,6 +8,7 @@
     "의정부시","시흥시","파주시","김포시","광명시","광주시","군포시","하남시","오산시","이천시",
     "안성시","의왕시","양주시","구리시","포천시","여주시","동두천시","과천시","가평군","양평군","연천군"];
   const MBTI = ["INTJ","INTP","ENTJ","ENTP","INFJ","INFP","ENFJ","ENFP","ISTJ","ISFJ","ESTJ","ESFJ","ISTP","ISFP","ESTP","ESFP"];
+  const REGIONS = ["서울","경기","인천","강원","충청","전라","경상","제주"];
   const KEYWORDS = ["여행","운동","독서","요리","음악","영화","반려동물","사진","게임","카페"];
 
   const MAX_EXTRAS = 4;
@@ -38,6 +39,17 @@
     kwBox.appendChild(label);
   });
 
+  const meetBox = $("#meet-regions");
+  REGIONS.forEach((r) => {
+    const label = document.createElement("label");
+    label.className = "chip";
+    label.innerHTML = '<input type="checkbox" name="meet_regions"><span></span>';
+    label.querySelector("input").value = r;
+    label.querySelector("span").textContent = r;
+    meetBox.appendChild(label);
+  });
+  const meetInputs = () => $$('input[name="meet_regions"]', meetBox);
+
   // ---------- 지역 → 구/시·군 ----------
   const regionSel = $("#region");
   const districtField = $("#district-field");
@@ -46,6 +58,11 @@
 
   regionSel.addEventListener("change", () => {
     const r = regionSel.value;
+    // 만날 수 있는 지역을 아직 안 골랐으면 사는 지역을 먼저 골라 둬요
+    if (r && !meetInputs().some((i) => i.checked)) {
+      const own = meetInputs().find((i) => i.value === r);
+      if (own) { own.checked = true; clearError(own); }
+    }
     const list = r === "서울" ? SEOUL : r === "경기" ? GYEONGGI : null;
     districtSel.innerHTML = "";
     clearError(districtSel);
@@ -128,6 +145,20 @@
         firstBad = firstBad || el;
       }
     });
+    // 만날 수 있는 지역: 하나 이상
+    const meetFirst = $('input[name="meet_regions"]', stepEl);
+    if (meetFirst && !meetInputs().some((i) => i.checked)) {
+      showError(meetFirst, "하나 이상 골라 주세요.");
+      firstBad = firstBad || meetFirst;
+    }
+    // 원하는 상대 나이: 최소 ≤ 최대
+    const ageMin = $("#pref_age_min", stepEl);
+    const ageMax = $("#pref_age_max", stepEl);
+    if (ageMin && ageMax && ageMin.value && ageMax.value && ageMin.checkValidity() && ageMax.checkValidity()
+        && Number(ageMin.value) > Number(ageMax.value)) {
+      showError(ageMax, "최대 나이가 최소 나이보다 작아요.");
+      firstBad = firstBad || ageMax;
+    }
     // 선택 항목 형식 검사 (키, 이메일)
     ["#height", "#email"].forEach((sel) => {
       const el = $(sel, stepEl);
@@ -258,6 +289,9 @@
         keywords: fd.getAll("keywords"),
         good_match: fd.get("good_match"),
         bad_match: fd.get("bad_match"),
+        meet_regions: fd.getAll("meet_regions"),
+        pref_age_min: fd.get("pref_age_min"),
+        pref_age_max: fd.get("pref_age_max"),
       };
       const contact = {
         // 전화번호처럼 숫자·하이픈·공백만 있으면 숫자만 남겨요 (카카오톡 ID는 그대로)
@@ -270,9 +304,7 @@
       const { error } = await db.rpc("submit_application", { p_resume: resume, p_contact: contact });
       if (error) throw new Error(error.message || "제출하지 못했어요. 잠시 후 다시 시도해 주세요.");
 
-      form.reset();
-      preview.hidden = true;
-      districtField.hidden = true;
+      resetForm();
       goTo(3);
     } catch (err) {
       submitError.textContent = err.message;
@@ -282,6 +314,97 @@
       submitBtn.textContent = "이력서 제출하기";
     }
   });
+
+  // ---------- 임시 저장 ----------
+  // 이 브라우저에만 저장돼요. 사진·연락처·동의 항목은 저장하지 않아요.
+  const DRAFT_KEY = "teacher-dating-draft-v1";
+  const DRAFT_SKIP = new Set(["contact", "email", "is_adult", "privacy_agreed"]);
+  const draftNotice = $("#draft-notice");
+
+  function draftFields() {
+    return $$("input, select, textarea", form).filter((el) =>
+      el.name && el.type !== "file" && !DRAFT_SKIP.has(el.name));
+  }
+
+  function collectDraft() {
+    const data = {};
+    draftFields().forEach((el) => {
+      if (el.type === "checkbox") {
+        if (!data[el.name]) data[el.name] = [];
+        if (el.checked) data[el.name].push(el.value);
+      } else if (el.type === "radio") {
+        if (el.checked) data[el.name] = el.value;
+      } else {
+        data[el.name] = el.value;
+      }
+    });
+    return data;
+  }
+
+  function hasContent(data) {
+    return Object.values(data).some((v) => (Array.isArray(v) ? v.length : String(v).trim()));
+  }
+
+  let saveTimer = null;
+  function saveDraft() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      try {
+        const data = collectDraft();
+        if (hasContent(data)) localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+        else localStorage.removeItem(DRAFT_KEY);
+      } catch (_) { /* 저장이 막힌 브라우저면 조용히 넘어가요 */ }
+    }, 400);
+  }
+
+  function clearDraft() {
+    clearTimeout(saveTimer);
+    try { localStorage.removeItem(DRAFT_KEY); } catch (_) {}
+  }
+
+  function setValue(name, value) {
+    const els = $$(`[name="${name}"]`, form);
+    els.forEach((el) => {
+      if (el.type === "checkbox") el.checked = Array.isArray(value) && value.includes(el.value);
+      else if (el.type === "radio") el.checked = el.value === value;
+      else el.value = value;
+    });
+  }
+
+  function restoreDraft() {
+    let data = null;
+    try { data = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (_) { data = null; }
+    if (!data || typeof data !== "object" || !hasContent(data)) return;
+    // 지역을 먼저 넣어야 구/시·군 목록이 생겨요
+    if (data.region) {
+      regionSel.value = data.region;
+      regionSel.dispatchEvent(new Event("change"));
+    }
+    Object.keys(data).forEach((name) => {
+      if (name === "region" || DRAFT_SKIP.has(name)) return;
+      setValue(name, data[name]);
+    });
+    draftNotice.hidden = false;
+  }
+
+  function resetForm() {
+    clearDraft();
+    form.reset();
+    preview.hidden = true;
+    districtField.hidden = true;
+    districtSel.required = false;
+    $$(".field-error", form).forEach((n) => n.remove());
+    $$(".invalid", form).forEach((n) => n.classList.remove("invalid"));
+    draftNotice.hidden = true;
+  }
+
+  form.addEventListener("input", saveDraft);
+  form.addEventListener("change", saveDraft);
+  $("#draft-clear").addEventListener("click", () => {
+    resetForm();
+    goTo(1);
+  });
+  restoreDraft();
 
   // ---------- 피드백 ----------
   const fbForm = $("#feedback-form");

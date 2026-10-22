@@ -112,6 +112,9 @@
 
       const meta = $(".card-meta", node);
       addRow(meta, "지역", [x.region, x.district].filter(Boolean).join(" "));
+      addRow(meta, "만남 가능", x.meet_regions);
+      addRow(meta, "원하는 나이",
+        x.pref_age_min || x.pref_age_max ? `${x.pref_age_min ?? "?"}~${x.pref_age_max ?? "?"}세` : "");
       addRow(meta, "직업", x.job);
       addRow(meta, "키", x.height ? `${x.height}cm` : "");
       addRow(meta, "MBTI", x.mbti);

@@ -65,6 +65,11 @@
         <h2 id="apply-title" class="apply-title">이력서 쓰기</h2>
         <p id="config-warning" class="notice" hidden>아직 저장소가 연결되지 않았어요. config.js에 Supabase 주소와 키를 넣으면 제출할 수 있어요.</p>
 
+        <div id="draft-notice" class="draft-notice" role="status" hidden>
+          <p>작성하던 내용을 불러왔어요. 사진은 다시 골라 주세요.</p>
+          <button type="button" class="btn-link" id="draft-clear">처음부터 쓰기</button>
+        </div>
+
         <ol class="stepper" aria-label="진행 단계">
           <li data-step="1" aria-current="step"><span>1</span>이력서</li>
           <li data-step="2"><span>2</span>연락처</li>
@@ -122,6 +127,24 @@
                 <select id="district" name="district"></select>
               </div>
             </div>
+
+            <fieldset class="field" id="meet-field">
+              <legend>만날 수 있는 지역 <em>필수</em></legend>
+              <p class="hint">데이트하러 갈 수 있는 지역을 모두 골라 주세요.</p>
+              <div class="choice-row wrap-row" id="meet-regions"></div>
+            </fieldset>
+
+            <fieldset class="field" id="pref-age-field">
+              <legend>원하는 상대 나이 (만) <em>필수</em></legend>
+              <div class="range-row">
+                <label class="sr-only" for="pref_age_min">최소 나이</label>
+                <input id="pref_age_min" name="pref_age_min" type="number" inputmode="numeric" min="19" max="80" required placeholder="예) 30">
+                <span aria-hidden="true">세 ~</span>
+                <label class="sr-only" for="pref_age_max">최대 나이</label>
+                <input id="pref_age_max" name="pref_age_max" type="number" inputmode="numeric" min="19" max="80" required placeholder="예) 36">
+                <span aria-hidden="true">세</span>
+              </div>
+            </fieldset>
 
             <div class="row">
               <div class="field">
