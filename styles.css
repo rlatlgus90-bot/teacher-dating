@@ -117,6 +117,26 @@ p { margin: 0 0 1rem; }
 }
 .howto strong { display: block; }
 
+.caution { padding: 0 0 72px; }
+.caution-lead { color: var(--muted); margin: -4px 0 16px; }
+.caution ol { margin: 0; padding: 0; list-style: none; counter-reset: caution; }
+.caution li {
+  counter-increment: caution;
+  position: relative;
+  padding: 16px 0 16px 44px;
+  border-bottom: 1px solid var(--line);
+  line-height: 1.7;
+}
+.caution li::before {
+  content: counter(caution);
+  position: absolute; left: 0; top: 16px;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--ink); color: #fff;
+  font-size: .85rem; font-weight: 700;
+}
+.caution li strong { display: block; margin-bottom: 4px; }
+
 .promise { padding: 32px 0 72px; }
 .promise ul { padding: 0; margin: 0 0 2rem; list-style: none; }
 .promise li { padding: 12px 0; border-bottom: 1px solid var(--line); }
