@@ -40,6 +40,8 @@
   <main id="data-view" hidden>
     <nav class="tabs wrap-wide" role="tablist">
       <button role="tab" aria-selected="true" data-tab="resumes">이력서 <span id="count-resumes"></span></button>
+      <button role="tab" aria-selected="false" data-tab="matches">매칭 <span id="count-matches"></span></button>
+      <button role="tab" aria-selected="false" data-tab="stats">통계</button>
       <button role="tab" aria-selected="false" data-tab="feedback">피드백 <span id="count-feedback"></span></button>
     </nav>
 
@@ -53,6 +55,39 @@
       </div>
       <div id="resume-list" class="cards"></div>
       <p id="resume-empty" class="empty" hidden>아직 들어온 이력서가 없어요. 이력서 링크를 공유해 보세요.</p>
+    </section>
+
+    <section id="tab-matches" class="wrap-wide" role="tabpanel" hidden>
+      <form id="new-match" class="panel" novalidate>
+        <h2>새 매칭 기록</h2>
+        <p class="hint">남성분께 먼저 프로필을 보여드린 뒤 기록해 주세요. 비공개이거나 지금 만남 중인 회원은 목록에 나오지 않아요.</p>
+        <div class="row">
+          <div class="field">
+            <label for="nm-man">남성</label>
+            <select id="nm-man"><option value="">고르세요</option></select>
+          </div>
+          <div class="field">
+            <label for="nm-woman">여성</label>
+            <select id="nm-woman"><option value="">고르세요</option></select>
+          </div>
+        </div>
+        <div id="nm-fit" aria-live="polite"></div>
+        <p id="nm-error" class="error" role="alert" hidden></p>
+        <button type="submit" class="btn btn-pink">남성에게 제안함으로 기록</button>
+      </form>
+
+      <div class="filters" role="group" aria-label="매칭 단계로 보기">
+        <button class="filter mfilter is-on" data-f="open">답 기다리는 중</button>
+        <button class="filter mfilter" data-f="meeting">만남 중</button>
+        <button class="filter mfilter" data-f="ended">끝난 매칭</button>
+        <button class="filter mfilter" data-f="all">전체</button>
+      </div>
+      <div id="match-list" class="match-list"></div>
+      <p id="match-empty" class="empty" hidden>여기에 해당하는 매칭이 없어요.</p>
+    </section>
+
+    <section id="tab-stats" class="wrap-wide" role="tabpanel" hidden>
+      <div id="stats"></div>
     </section>
 
     <section id="tab-feedback" class="wrap-wide" role="tabpanel" hidden>

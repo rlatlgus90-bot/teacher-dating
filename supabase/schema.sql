@@ -284,6 +284,62 @@ create policy "admin delete photos" on storage.objects
   using (bucket_id = 'photos' and public.is_admin());
 
 -- ---------------------------------------------------------------------
+-- 5-1. 매칭 일지 + 만남 후 확인 (관리자만)
+--      단계: 남성 제안 → 여성 제안 → 만남 진행 → 종료 (중간 거절 가능)
+-- ---------------------------------------------------------------------
+create table if not exists public.matches (
+  id                uuid primary key default gen_random_uuid(),
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now(),
+  man_id            uuid not null references public.resumes(id) on delete cascade,
+  woman_id          uuid not null references public.resumes(id) on delete cascade,
+  stage             text not null default '남성 제안'
+                    check (stage in ('남성 제안', '남성 거절', '여성 제안', '여성 거절', '만남 진행', '종료')),
+  man_offered_at    timestamptz not null default now(),
+  woman_offered_at  timestamptz,
+  contact_sent_at   timestamptz,
+  ended_at          timestamptz,
+  outcome           text check (outcome in ('교제', '만남 후 종료', '연락 두절', '기타')),
+  man_feel          text check (man_feel in ('좋았어요', '보통이에요', '아쉬웠어요')),
+  man_again         text check (man_again in ('있어요', '없어요', '모르겠어요')),
+  man_issue         text check (char_length(man_issue) <= 1000),
+  woman_feel        text check (woman_feel in ('좋았어요', '보통이에요', '아쉬웠어요')),
+  woman_again       text check (woman_again in ('있어요', '없어요', '모르겠어요')),
+  woman_issue       text check (char_length(woman_issue) <= 1000),
+  checked_at        timestamptz,
+  note              text check (char_length(note) <= 2000),
+  constraint matches_pair_unique unique (man_id, woman_id)
+);
+
+-- 한 사람은 동시에 한 만남만 (주의사항 2번)
+create unique index if not exists matches_one_meeting_man   on public.matches (man_id)   where stage = '만남 진행';
+create unique index if not exists matches_one_meeting_woman on public.matches (woman_id) where stage = '만남 진행';
+
+create or replace function public.matches_guard()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if (select gender from public.resumes where id = new.man_id) is distinct from '남성'
+     or (select gender from public.resumes where id = new.woman_id) is distinct from '여성' then
+    raise exception '남성과 여성 이력서를 하나씩 골라 주세요.';
+  end if;
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists matches_guard on public.matches;
+create trigger matches_guard before insert or update on public.matches
+  for each row execute function public.matches_guard();
+
+alter table public.matches enable row level security;
+drop policy if exists "admin all matches" on public.matches;
+create policy "admin all matches" on public.matches for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+
+-- ---------------------------------------------------------------------
 -- 6. 관리자 등록 (본인 이메일로 바꿔서 실행)
 -- ---------------------------------------------------------------------
 -- insert into public.admins (email) values ('관리자이메일@example.com') on conflict do nothing;
