@@ -160,3 +160,7 @@ body.admin { background: #f6f3f4; font-size: 16px; }
 .seg-w { background: var(--pink); }
 .legend { font-size: .85rem; color: var(--muted); margin: 8px 0 0; }
 .legend .seg { width: 12px; border-radius: 2px; }
+
+.card-foot { display: flex; justify-content: flex-end; margin-top: 10px; }
+.card-delete { color: var(--error); font-size: .88rem; }
+.card-delete[disabled] { opacity: .55; cursor: progress; }

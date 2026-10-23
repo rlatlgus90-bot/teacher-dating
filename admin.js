@@ -160,6 +160,9 @@
         if (statusFilter && statusFilter !== sel.value) renderResumes();
       });
 
+      const delBtn = $(".card-delete", node);
+      delBtn.addEventListener("click", () => deleteResume(x, delBtn));
+
       const img = $(".card-photo", node);
       img.alt = `${x.nickname} 대표 사진`;
       signed(x.photo_path).then((u) => { if (u) img.src = u; });
@@ -180,6 +183,43 @@
 
       list.appendChild(node);
     });
+  }
+
+  // 이력서·연락처·사진·매칭 기록을 한 번에 지워요 (탈퇴·파기 요청, 테스트 가입 정리용)
+  async function deleteResume(x, btn) {
+    const n = matches.filter((m) => m.man_id === x.id || m.woman_id === x.id).length;
+    const msg = `${x.nickname}님의 이력서, 연락처, 사진을 모두 삭제할까요?`
+      + (n ? `\n이 회원의 매칭 기록 ${n}건도 함께 지워져요.` : "")
+      + "\n삭제하면 되돌릴 수 없어요.";
+    if (!confirm(msg)) return;
+
+    const reset = () => { btn.disabled = false; btn.textContent = "이력서 삭제"; };
+    btn.disabled = true;
+    btn.textContent = "삭제하는 중…";
+
+    // 1) 사진 먼저: 실패하면 아무것도 지우지 않고 멈춰요
+    const paths = [x.photo_path, ...(x.extra_photo_paths || [])].filter(Boolean);
+    if (paths.length) {
+      const { error } = await db.storage.from("photos").remove(paths);
+      if (error) {
+        alert(`사진을 지우지 못해 삭제를 멈췄어요. 잠시 후 다시 시도해 주세요. (${error.message})`);
+        reset();
+        return;
+      }
+    }
+
+    // 2) 이력서 삭제 → 연락처·매칭 기록은 자동으로 함께 지워져요
+    const { data, error } = await db.from("resumes").delete().eq("id", x.id).select("id");
+    if (error || !data || !data.length) {
+      alert("이력서를 지우지 못했어요. 관리자 계정으로 로그인했는지 확인해 주세요.");
+      reset();
+      return;
+    }
+
+    resumes = resumes.filter((r) => r.id !== x.id);
+    matches = matches.filter((m) => m.man_id !== x.id && m.woman_id !== x.id);
+    $("#count-resumes").textContent = String(resumes.length);
+    refreshMatchViews();
   }
 
   function renderFeedback(rows) {
