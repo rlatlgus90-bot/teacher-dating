@@ -59,13 +59,14 @@
 
   // ---------- 데이터 ----------
   async function loadAll() {
-    const [r, c, f, mt] = await Promise.all([
+    const [r, c, f, mt, rv] = await Promise.all([
       db.from("resumes").select("*").order("created_at", { ascending: false }),
       db.from("contacts").select("*"),
       db.from("feedback").select("*").order("created_at", { ascending: false }),
       db.from("matches").select("*").order("created_at", { ascending: false }),
+      db.from("reviews").select("*"),
     ]);
-    if (r.error || c.error || f.error || mt.error) {
+    if (r.error || c.error || f.error || mt.error || rv.error) {
       $("#resume-list").innerHTML = "";
       const msg = document.createElement("p");
       msg.className = "error";
@@ -78,6 +79,7 @@
     $("#count-resumes").textContent = String(resumes.length);
     $("#count-feedback").textContent = String(f.data.length);
     matches = mt.data;
+    reviews = rv.data;
     refreshMatchViews();
     renderFeedback(f.data);
   }
@@ -469,7 +471,8 @@
 
     const met = m.stage === "만남 진행" || m.stage === "종료";
     const needsCheck = met && !m.checked_at && m.contact_sent_at && daysBetween(m.contact_sent_at, now()) >= 3;
-    if (needsCheck) card.append(el("p", { class: "remind", text: "연락처를 전달한 지 3일이 지났어요. 만남 후 확인을 해 주세요." }));
+    if (needsCheck) card.append(el("p", { class: "remind", text: "연락처를 전달한 지 3일이 지났어요. 아래 후기 링크를 보내거나 직접 확인해 주세요." }));
+    if (met) reviewFlags(m, card, man, woman);
 
     // 단계 버튼
     const actions = el("div", { class: "mcard-actions" });
@@ -508,6 +511,7 @@
       }));
     }
     card.append(actions);
+    if (met) card.append(reviewLinks(m, man, woman));
 
     // 만남 후 확인 + 메모
     const det = el("details", { class: "mcard-more" });
@@ -548,9 +552,123 @@
       openChecks.add(m.id);
       await updateMatch(m, patch);
     });
+    const summary = met ? reviewSummary(m) : null;
+    if (summary) det.append(summary);
     det.append(form);
     card.append(det);
     return card;
+  }
+
+  // ---------- 만남 후기 (링크로 받은 답변) ----------
+  let reviews = [];
+  const SIDES = [["man", "남성"], ["woman", "여성"]];
+  const reviewOf = (m, side) => reviews.find((r) => r.match_id === m.id && r.side === side);
+  const reviewUrl = (token) => new URL(`review.html?t=${token}`, location.href).href;
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (_) { /* 아래 방법으로 다시 시도 */ }
+    const ta = el("textarea", { style: "position:fixed;opacity:0;pointer-events:none" });
+    ta.value = text;
+    document.body.append(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (_) { ok = false; }
+    ta.remove();
+    return ok;
+  }
+
+  function reviewLinks(m, man, woman) {
+    const box = el("div", { class: "review-links" }, el("p", { class: "rl-title", text: "후기 링크 (카톡으로 보내 주세요)" }));
+    SIDES.forEach(([k, g]) => {
+      const token = m[`${k}_review_token`];
+      if (!token) return;
+      const r = k === "man" ? man : woman;
+      const rv = reviewOf(m, k);
+      const msg = [
+        "안녕하세요, 선생님 이력서 소개팅입니다 😊",
+        `${r ? `${r.nickname}님, ` : ""}만남은 잘 하셨나요?`,
+        "아래 링크에서 짧은 후기를 남겨 주세요. 2분이면 충분해요.",
+        "답변은 운영자만 보고, 상대분께는 절대 전달되지 않아요.",
+        "",
+        reviewUrl(token),
+      ].join("\n");
+      const label = `${g}용 메시지 복사`;
+      const btn = el("button", { type: "button", class: "btn btn-sm btn-ghost", text: label });
+      btn.addEventListener("click", async () => {
+        const ok = await copyText(msg);
+        btn.textContent = ok ? "복사했어요" : "복사하지 못했어요";
+        setTimeout(() => { btn.textContent = label; }, 1800);
+      });
+      box.append(el("div", { class: "rl-row" },
+        el("span", { class: rv ? "rl-state is-done" : "rl-state", text: rv ? `${g} 후기 받음 · ${shortDate(rv.updated_at)}` : `${g} 후기 아직` }),
+        btn));
+    });
+    return box;
+  }
+
+  function reviewFlags(m, card, man, woman) {
+    SIDES.forEach(([k, g]) => {
+      const rv = reviewOf(m, k);
+      if (!rv) return;
+      const who = k === "man" ? man : woman;
+      const other = k === "man" ? woman : man;
+      if (rv.rude === "있었어요") {
+        card.append(el("p", { class: "warn", text: `${g}분이 불편했던 점을 남겼어요. 아래 '만남 후 확인'에서 내용을 확인해 주세요.` }));
+      }
+      if (rv.resemble === "많이 달랐어요") {
+        card.append(el("p", { class: "warn", text: `${g}분이 ${other ? `${other.nickname}님의 ` : "상대의 "}이력서와 실제가 많이 달랐다고 했어요.` }));
+      }
+      card.append(el("p", { class: "nextstep" },
+        el("b", { text: `${g}${who ? ` · ${who.nickname}` : ""}` }), ` 다음 매칭 → ${rv.next_step}`));
+    });
+  }
+
+  function reviewSummary(m) {
+    const cols = SIDES.map(([k, g]) => {
+      const rv = reviewOf(m, k);
+      if (!rv) return null;
+      const dl = el("dl", { class: "rv-dl" });
+      [
+        ["만남", rv.feel],
+        ["다시 만날 의향", rv.again],
+        ["이력서와 실제", rv.resemble],
+        ["불편했던 점", rv.rude === "있었어요" ? rv.rude_detail : "없었어요"],
+        ["다음 소개 참고", rv.next_pref],
+        ["소개 과정", rv.svc_satisfaction],
+        ["이력서 방식", rv.resume_helpful],
+        ["서비스 의견", rv.svc_feedback],
+        ["추천 의향", rv.recommend],
+        ["다음 매칭", rv.next_step],
+        ["후기 공개", rv.publish_ok === true ? "괜찮아요" : rv.publish_ok === false ? "소개하지 말아 주세요" : "답 안 함"],
+      ].forEach(([t, v]) => { if (v) dl.append(el("dt", { text: t }), el("dd", { text: v })); });
+      return el("div", { class: "rv-col" }, el("h4", { text: `${g} 후기 · ${shortDate(rv.updated_at)}` }), dl);
+    }).filter(Boolean);
+    return cols.length ? el("div", { class: "rv-sum" }, cols) : null;
+  }
+
+  function reviewStats() {
+    const n = reviews.length;
+    const share = (key, val) => pct(reviews.filter((r) => r[key] === val).length, n);
+    const rude = reviews.filter((r) => r.rude === "있었어요").length;
+    const differ = reviews.filter((r) => r.resemble === "많이 달랐어요").length;
+    const opinions = reviews.filter((r) => r.svc_feedback)
+      .sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1)).slice(0, 10);
+    return statSection("서비스 평가", "후기 링크로 받은 답변 기준이에요.",
+      tiles([
+        ["후기 응답", `${n}건`, `남 ${reviews.filter((r) => r.side === "man").length} · 여 ${reviews.filter((r) => r.side === "woman").length}`],
+        ["소개 과정 '만족해요'", share("svc_satisfaction", "만족해요"), ""],
+        ["이력서 방식 '도움이 됐어요'", share("resume_helpful", "도움이 됐어요"), ""],
+        ["'추천할게요'", share("recommend", "추천할게요"), ""],
+        ["후기 공개 동의", `${reviews.filter((r) => r.publish_ok === true).length}건`, "공개 후기로 쓸 수 있는 답변"],
+        ["주의 신호", `${rude + differ}건`, `불편한 언행 ${rude} · 이력서와 많이 다름 ${differ}`],
+      ]),
+      opinions.length
+        ? el("div", { class: "opinions" }, el("h3", { text: "최근 서비스 의견" }),
+          el("ul", {}, opinions.map((r) => el("li", {}, el("small", { text: `${shortDate(r.updated_at)} · ${r.side === "man" ? "남성" : "여성"}` }), el("p", { text: r.svc_feedback })))))
+        : null);
   }
 
   // ---------- 통계 ----------
@@ -627,6 +745,8 @@
       ["여성 '좋았어요'", pct(good("woman"), answered("woman")), `응답 ${answered("woman")}건`],
       ["둘 다 다시 만날 의향", `${bothAgain}건`, issues ? `불편했던 점 기록 ${issues}건` : "불편했던 점 기록 없음"],
     ])));
+
+    box.append(reviewStats());
 
     // 걸린 시간
     const firstOffer = new Map();

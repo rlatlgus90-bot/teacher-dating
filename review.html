@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>만남 후기 · 선생님 이력서 소개팅</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="review-page">
+  <header class="review-head">
+    <div class="wrap">
+      <p class="hero-brand">선생님 이력서 소개팅</p>
+      <h1 class="review-title">만남 후기</h1>
+    </div>
+  </header>
+
+  <main class="wrap review-main">
+    <p id="v-loading" class="review-msg">불러오는 중이에요…</p>
+
+    <div id="v-message" class="review-msg" role="alert" hidden>
+      <h2 id="msg-title"></h2>
+      <p id="msg-body"></p>
+    </div>
+
+    <form id="review-form" class="sheet" novalidate hidden>
+      <p class="private-note">답변은 운영자만 보고, 상대분께는 절대 전달되지 않아요. 2분이면 충분해요.</p>
+      <p id="already-note" class="draft-notice" hidden>이미 후기를 남겨 주셨어요. 다시 제출하면 새 답변으로 바뀌어요.</p>
+
+      <h3 class="sheet-head">이번 만남에 대해</h3>
+
+      <fieldset class="field">
+        <legend>1. 만남은 어떠셨나요? <em>필수</em></legend>
+        <div class="choice-row">
+          <label class="chip"><input type="radio" name="feel" value="좋았어요" required><span>좋았어요</span></label>
+          <label class="chip"><input type="radio" name="feel" value="보통이에요"><span>보통이에요</span></label>
+          <label class="chip"><input type="radio" name="feel" value="아쉬웠어요"><span>아쉬웠어요</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend>2. <span class="partner-name">상대분</span>과 다시 만날 의향이 있으신가요? <em>필수</em></legend>
+        <div class="choice-row">
+          <label class="chip"><input type="radio" name="again" value="있어요" required><span>있어요</span></label>
+          <label class="chip"><input type="radio" name="again" value="없어요"><span>없어요</span></label>
+          <label class="chip"><input type="radio" name="again" value="모르겠어요"><span>아직 모르겠어요</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend>3. 이력서에서 본 모습과 실제로 만난 느낌이 비슷했나요? <em>필수</em></legend>
+        <div class="choice-row">
+          <label class="chip"><input type="radio" name="resemble" value="비슷했어요" required><span>비슷했어요</span></label>
+          <label class="chip"><input type="radio" name="resemble" value="조금 달랐어요"><span>조금 달랐어요</span></label>
+          <label class="chip"><input type="radio" name="resemble" value="많이 달랐어요"><span>많이 달랐어요</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend>4. 만남 중에 불편하거나 무례하다고 느낀 점이 있었나요? <em>필수</em></legend>
+        <div class="choice-row">
+          <label class="chip"><input type="radio" name="rude" value="없었어요" required><span>없었어요</span></label>
+          <label class="chip"><input type="radio" name="rude" value="있었어요"><span>있었어요</span></label>
+        </div>
+      </fieldset>
+
+      <div class="field" id="rude-detail-field" hidden>
+        <label for="rude_detail">어떤 점이 불편하셨나요? <em>필수</em></label>
+        <p class="hint">운영자만 확인하고, 필요하면 이용 제한 등 조치할게요.</p>
+        <textarea id="rude_detail" name="rude_detail" rows="3" maxlength="1000"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="next_pref">5. 다음 소개 때 참고하면 좋을 점이 있다면 알려 주세요.</label>
+        <p class="hint">예) 원하는 나이대, 지역, 대화 스타일 등</p>
+        <textarea id="next_pref" name="next_pref" rows="2" maxlength="1000"></textarea>
+      </div>
+
+      <h3 class="sheet-head">서비스에 대해</h3>
+
+      <fieldset class="field">
+        <legend>6. 소개받는 과정은 만족스러우셨나요? <em>필수</em></legend>
+        <div class="choice-row">
+          <label class="chip"><input type="radio" name="svc_satisfaction" value="만족해요" required><span>만족해요</span></label>
+          <label class="chip"><input type="radio" name="svc_satisfaction" value="보통이에요"><span>보통이에요</span></label>
+          <label class="chip"><input type="radio" name="svc_satisfaction" value="아쉬웠어요"><span>아쉬웠어요</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend>7. 이력서를 읽고 만나는 방식이 사진·조건 위주 소개팅보다 도움이 됐나요? <em>필수</em></legend>
+        <div class="choice-row">
+          <label class="chip"><input type="radio" name="resume_helpful" value="도움이 됐어요" required><span>도움이 됐어요</span></label>
+          <label class="chip"><input type="radio" name="resume_helpful" value="비슷했어요"><span>비슷했어요</span></label>
+          <label class="chip"><input type="radio" name="resume_helpful" value="별로였어요"><span>별로였어요</span></label>
+        </div>
+      </fieldset>
+
+      <div class="field">
+        <label for="svc_feedback">8. 불편했던 점이나 바라는 점을 자유롭게 적어 주세요.</label>
+        <textarea id="svc_feedback" name="svc_feedback" rows="3" maxlength="2000"></textarea>
+      </div>
+
+      <fieldset class="field">
+        <legend>9. 주변 선생님(또는 지인)께 추천하고 싶으신가요? <em>필수</em></legend>
+        <div class="choice-row">
+          <label class="chip"><input type="radio" name="recommend" value="추천할게요" required><span>추천할게요</span></label>
+          <label class="chip"><input type="radio" name="recommend" value="잘 모르겠어요"><span>잘 모르겠어요</span></label>
+          <label class="chip"><input type="radio" name="recommend" value="추천하지 않을래요"><span>추천하지 않을래요</span></label>
+        </div>
+      </fieldset>
+
+      <h3 class="sheet-head">앞으로</h3>
+
+      <fieldset class="field">
+        <legend>10. 다음 매칭은 어떻게 할까요? <em>필수</em></legend>
+        <div class="choice-col">
+          <label class="chip"><input type="radio" name="next_step" value="다시 시작해 주세요" required><span>다시 시작해 주세요</span></label>
+          <label class="chip"><input type="radio" name="next_step" value="이분과 더 만나볼게요"><span>이분과 더 만나볼게요 (다른 매칭은 계속 멈춰둘게요)</span></label>
+          <label class="chip"><input type="radio" name="next_step" value="당분간 쉴게요"><span>당분간 쉴게요</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend>11. 남겨주신 의견을 이름 없이 서비스 후기로 소개해도 될까요?</legend>
+        <div class="choice-row">
+          <label class="chip"><input type="radio" name="publish_ok" value="true"><span>괜찮아요</span></label>
+          <label class="chip"><input type="radio" name="publish_ok" value="false"><span>소개하지 말아 주세요</span></label>
+        </div>
+      </fieldset>
+
+      <p id="submit-error" class="error" role="alert" hidden></p>
+      <div class="actions">
+        <button type="submit" class="btn btn-pink" id="submit-btn">후기 보내기</button>
+      </div>
+    </form>
+
+    <div id="v-done" class="review-msg" tabindex="-1" hidden>
+      <h2>소중한 의견 감사합니다 🙏</h2>
+      <p>남겨주신 답변은 운영자만 확인해요.</p>
+      <p class="private-note">소개 과정에서 받으신 상대분의 사진과 프로필은 삭제 부탁드려요.</p>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="review.js"></script>
+</body>
+</html>

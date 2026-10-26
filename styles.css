@@ -272,3 +272,15 @@ input[type="file"] { font: inherit; max-width: 100%; }
 .status { margin: 0; color: var(--muted); }
 
 .foot { padding: 32px 0 48px; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--line); }
+
+/* ---------- 만남 후기 페이지 ---------- */
+.review-head { background: var(--ink); color: var(--paper); padding: 40px 0 36px; }
+.review-head .hero-brand { margin-bottom: .5rem; }
+.review-title { font-family: var(--display); font-weight: 400; font-size: clamp(2.2rem, 8vw, 3rem); }
+.review-main { padding: 28px 0 72px; }
+.review-msg { padding: 24px 0; }
+.review-msg:focus { outline: none; }
+.review-page .sheet { margin-top: 0; }
+.review-page .sheet-head:first-of-type { margin-top: 24px; }
+.choice-col { display: grid; gap: 8px; justify-items: start; }
+.choice-col .chip span { border-radius: 14px; }

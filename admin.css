@@ -164,3 +164,28 @@ body.admin { background: #f6f3f4; font-size: 16px; }
 .card-foot { display: flex; justify-content: flex-end; margin-top: 10px; }
 .card-delete { color: var(--error); font-size: .88rem; }
 .card-delete[disabled] { opacity: .55; cursor: progress; }
+
+/* ---------- 만남 후기 ---------- */
+.review-links { margin-top: 12px; background: var(--blush); border-radius: 10px; padding: 10px 12px; }
+.rl-title { margin: 0 0 6px; font-size: .88rem; font-weight: 700; }
+.rl-row { display: flex; gap: 8px 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 4px 0; }
+.rl-state { font-size: .9rem; color: var(--muted); }
+.rl-state.is-done { color: #17733f; font-weight: 700; }
+.review-links .btn-ghost { background: #fff; }
+.nextstep { margin: 6px 0; font-size: .92rem; }
+.nextstep b { margin-right: 4px; }
+
+.rv-sum { display: grid; gap: 12px; margin: 10px 0 4px; }
+@media (min-width: 700px) { .rv-sum { grid-template-columns: 1fr 1fr; } }
+.rv-col { background: #faf8f9; border-radius: 10px; padding: 10px 12px; }
+.rv-col h4 { margin: 0 0 6px; font-size: .92rem; }
+.rv-dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 0; font-size: .88rem; }
+.rv-dl dt { color: var(--muted); }
+.rv-dl dd { margin: 0; white-space: pre-wrap; }
+
+.opinions { margin-top: 14px; }
+.opinions h3 { font-size: .95rem; margin: 0 0 6px; }
+.opinions ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.opinions li { border-left: 3px solid var(--pink); padding: 2px 0 2px 10px; }
+.opinions small { color: var(--muted); }
+.opinions p { margin: 0; white-space: pre-wrap; font-size: .92rem; }

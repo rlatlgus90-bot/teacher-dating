@@ -340,6 +340,140 @@ create policy "admin all matches" on public.matches for all to authenticated
   using (public.is_admin()) with check (public.is_admin());
 
 -- ---------------------------------------------------------------------
+-- 5-2. 만남 후기 (review.html?t=링크값 으로 회원이 직접 제출, 관리자만 열람)
+-- ---------------------------------------------------------------------
+alter table public.matches add column if not exists man_review_token uuid not null default gen_random_uuid();
+alter table public.matches add column if not exists woman_review_token uuid not null default gen_random_uuid();
+create unique index if not exists matches_man_review_token on public.matches (man_review_token);
+create unique index if not exists matches_woman_review_token on public.matches (woman_review_token);
+
+create table if not exists public.reviews (
+  id                uuid primary key default gen_random_uuid(),
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now(),
+  match_id          uuid not null references public.matches(id) on delete cascade,
+  side              text not null check (side in ('man', 'woman')),
+  feel              text not null check (feel in ('좋았어요', '보통이에요', '아쉬웠어요')),
+  again             text not null check (again in ('있어요', '없어요', '모르겠어요')),
+  resemble          text not null check (resemble in ('비슷했어요', '조금 달랐어요', '많이 달랐어요')),
+  rude              text not null check (rude in ('없었어요', '있었어요')),
+  rude_detail       text check (char_length(rude_detail) <= 1000),
+  next_pref         text check (char_length(next_pref) <= 1000),
+  svc_satisfaction  text not null check (svc_satisfaction in ('만족해요', '보통이에요', '아쉬웠어요')),
+  resume_helpful    text not null check (resume_helpful in ('도움이 됐어요', '비슷했어요', '별로였어요')),
+  svc_feedback      text check (char_length(svc_feedback) <= 2000),
+  recommend         text not null check (recommend in ('추천할게요', '잘 모르겠어요', '추천하지 않을래요')),
+  next_step         text not null check (next_step in ('다시 시작해 주세요', '이분과 더 만나볼게요', '당분간 쉴게요')),
+  publish_ok        boolean,
+  constraint reviews_match_side_unique unique (match_id, side)
+);
+
+alter table public.reviews enable row level security;
+drop policy if exists "admin all reviews" on public.reviews;
+create policy "admin all reviews" on public.reviews for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+
+create or replace function public.get_review_context(p_token uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  m        record;
+  v_side   text;
+  v_partner text;
+begin
+  select * into m from public.matches
+  where man_review_token = p_token or woman_review_token = p_token;
+  if not found then
+    return jsonb_build_object('ok', false, 'reason', 'invalid');
+  end if;
+  v_side := case when m.man_review_token = p_token then 'man' else 'woman' end;
+  if m.stage not in ('만남 진행', '종료') then
+    return jsonb_build_object('ok', false, 'reason', 'not_open');
+  end if;
+  select nickname into v_partner from public.resumes
+  where id = case when v_side = 'man' then m.woman_id else m.man_id end;
+  return jsonb_build_object(
+    'ok', true,
+    'side', v_side,
+    'partner', v_partner,
+    'submitted', exists (select 1 from public.reviews where match_id = m.id and side = v_side)
+  );
+end;
+$$;
+
+create or replace function public.submit_review(p_token uuid, p_answers jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  m        record;
+  a        jsonb := coalesce(p_answers, '{}'::jsonb);
+  v_side   text;
+  v_rude   text := a ->> 'rude';
+  v_detail text := nullif(trim(a ->> 'rude_detail'), '');
+begin
+  select * into m from public.matches
+  where man_review_token = p_token or woman_review_token = p_token;
+  if not found then
+    raise exception '링크가 올바르지 않아요.';
+  end if;
+  if m.stage not in ('만남 진행', '종료') then
+    raise exception '아직 후기를 남길 수 있는 단계가 아니에요.';
+  end if;
+  v_side := case when m.man_review_token = p_token then 'man' else 'woman' end;
+
+  if v_rude = '있었어요' and v_detail is null then
+    raise exception '불편했던 점을 적어 주세요.';
+  end if;
+  if v_rude = '없었어요' then
+    v_detail := null;
+  end if;
+
+  insert into public.reviews (
+    match_id, side, feel, again, resemble, rude, rude_detail, next_pref,
+    svc_satisfaction, resume_helpful, svc_feedback, recommend, next_step, publish_ok
+  ) values (
+    m.id, v_side, a ->> 'feel', a ->> 'again', a ->> 'resemble', v_rude, v_detail,
+    nullif(trim(a ->> 'next_pref'), ''),
+    a ->> 'svc_satisfaction', a ->> 'resume_helpful', nullif(trim(a ->> 'svc_feedback'), ''),
+    a ->> 'recommend', a ->> 'next_step',
+    case a ->> 'publish_ok' when 'true' then true when 'false' then false else null end
+  )
+  on conflict (match_id, side) do update set
+    updated_at = now(),
+    feel = excluded.feel, again = excluded.again, resemble = excluded.resemble,
+    rude = excluded.rude, rude_detail = excluded.rude_detail, next_pref = excluded.next_pref,
+    svc_satisfaction = excluded.svc_satisfaction, resume_helpful = excluded.resume_helpful,
+    svc_feedback = excluded.svc_feedback, recommend = excluded.recommend,
+    next_step = excluded.next_step, publish_ok = excluded.publish_ok;
+
+  -- 매칭 일지의 '만남 후 확인' 칸도 함께 채워요
+  if v_side = 'man' then
+    update public.matches
+      set man_feel = a ->> 'feel', man_again = a ->> 'again',
+          man_issue = coalesce(v_detail, man_issue), checked_at = coalesce(checked_at, now())
+      where id = m.id;
+  else
+    update public.matches
+      set woman_feel = a ->> 'feel', woman_again = a ->> 'again',
+          woman_issue = coalesce(v_detail, woman_issue), checked_at = coalesce(checked_at, now())
+      where id = m.id;
+  end if;
+end;
+$$;
+
+revoke all on function public.get_review_context(uuid) from public;
+revoke all on function public.submit_review(uuid, jsonb) from public;
+grant execute on function public.get_review_context(uuid) to anon, authenticated;
+grant execute on function public.submit_review(uuid, jsonb) to anon, authenticated;
+
+-- ---------------------------------------------------------------------
 -- 6. 관리자 등록 (본인 이메일로 바꿔서 실행)
 -- ---------------------------------------------------------------------
 -- insert into public.admins (email) values ('관리자이메일@example.com') on conflict do nothing;
