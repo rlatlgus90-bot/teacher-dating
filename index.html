@@ -252,7 +252,24 @@
             </div>
 
             <div class="field">
-              <label class="check"><input type="checkbox" name="privacy_agreed" id="privacy_agreed" required><span>연락처를 매칭 전달 목적으로만 수집·이용하고, 수집일로부터 <b id="retention-months">6</b>개월 후 또는 요청 시 즉시 파기하는 데 동의합니다 <em>필수</em></span></label>
+              <label class="check"><input type="checkbox" name="privacy_agreed" id="privacy_agreed" required><span>개인정보 수집·이용에 동의합니다 <em>필수</em></span></label>
+              <table class="consent-table">
+                <tr><th scope="row">목적</th><td>이력서 소개팅 매칭, 본인 확인, 매칭 결과 안내</td></tr>
+                <tr><th scope="row">항목</th><td>닉네임, 성별, 생년월일, 지역, 직업, 키, MBTI, 사진, 이력서 내용, 연락처, 이메일</td></tr>
+                <tr><th scope="row">보유 기간</th><td>수집일로부터 <b id="retention-months">6</b>개월 또는 삭제 요청 시까지 (이후 즉시 파기)</td></tr>
+              </table>
+              <p class="consent-note">동의를 거부할 수 있지만, 거부하면 서비스를 이용할 수 없어요.</p>
+            </div>
+
+            <div class="field">
+              <label class="check"><input type="checkbox" name="third_party_agreed" id="third_party_agreed" required><span>개인정보 제3자 제공에 동의합니다 <em>필수</em></span></label>
+              <table class="consent-table">
+                <tr><th scope="row">제공받는 자</th><td>매칭 후보 회원, 매칭이 성사된 상대 회원</td></tr>
+                <tr><th scope="row">목적</th><td>소개팅 매칭</td></tr>
+                <tr><th scope="row">항목</th><td>이력서 정보와 사진 (매칭 후보 회원), 연락처 (매칭이 성사된 상대 회원에게만)</td></tr>
+                <tr><th scope="row">보유 기간</th><td>소개 대화가 끝난 뒤 삭제 (주의사항 3번)</td></tr>
+              </table>
+              <p class="consent-note">동의를 거부할 수 있지만, 거부하면 매칭을 진행할 수 없어요. 자세한 내용은 <a href="privacy.html" class="inline-link" target="_blank" rel="noopener">개인정보처리방침</a>에서 볼 수 있어요.</p>
             </div>
 
             <div class="field">
@@ -298,7 +315,7 @@
   </main>
 
   <footer class="foot wrap">
-    <p>선생님 이력서 소개팅</p>
+    <p>선생님 이력서 소개팅 · <a href="privacy.html" class="foot-link">개인정보처리방침</a></p>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

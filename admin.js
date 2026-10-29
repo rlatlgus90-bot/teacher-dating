@@ -147,6 +147,13 @@
         addRow(cd, "이메일", x.contact.email);
         addRow(cd, "주의사항 동의", x.contact.rules_agreed ? "동의함" : "기록 없음");
         addRow(cd, "파기 예정", fmtDate(x.contact.delete_after));
+        addRow(cd, "개인정보 동의", hasConsent(x)
+          ? `새 동의 완료 · ${x.contact.consent_version}${x.contact.consent_at ? ` · ${fmtDate(x.contact.consent_at)}` : ""}`
+          : "새 동의 필요 (수집·이용, 제3자 제공)");
+        if (!hasConsent(x)) $(".card-contact", node).append(consentButton(x));
+        if (isExpired(x)) {
+          $(".card-name", node).append(el("span", { class: "busy-badge expired-badge", text: "보관 기한 지남" }));
+        }
       } else {
         addRow(cd, "연락처", "없음");
       }
@@ -222,6 +229,25 @@
     matches = matches.filter((m) => m.man_id !== x.id && m.woman_id !== x.id);
     $("#count-resumes").textContent = String(resumes.length);
     refreshMatchViews();
+  }
+
+  // ---------- 개인정보 동의 (2026-10-29 개정) ----------
+  const hasConsent = (r) => Boolean(r && r.contact && r.contact.consent_version);
+  const isExpired = (r) => Boolean(r && r.contact && r.contact.delete_after
+    && r.contact.delete_after < new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date()));
+
+  function consentButton(x) {
+    const btn = el("button", { type: "button", class: "btn btn-sm btn-dark consent-btn", text: "카톡으로 새 동의 받음 → 기록" });
+    btn.addEventListener("click", async () => {
+      if (!confirm(`${x.nickname}님이 개인정보 수집·이용, 제3자 제공, 주의사항에 모두 동의했다고 답했나요?\n동의 답장을 받은 경우에만 기록해 주세요.`)) return;
+      btn.disabled = true;
+      const patch = { privacy_agreed: true, third_party_agreed: true, rules_agreed: true, consent_version: "v2-카톡", consent_at: new Date().toISOString() };
+      const { data, error } = await db.from("contacts").update(patch).eq("resume_id", x.id).select().single();
+      if (error || !data) { alert("기록하지 못했어요. 잠시 후 다시 시도해 주세요."); btn.disabled = false; return; }
+      x.contact = data;
+      refreshMatchViews();
+    });
+    return btn;
   }
 
   function renderFeedback(rows) {
@@ -342,6 +368,14 @@
     checks.forEach(([t, ok]) => ul.append(el("li", { class: ok === null ? "fit-unknown" : ok ? "fit-ok" : "fit-no" },
       el("b", { text: ok === null ? "정보 없음" : ok ? "맞아요" : "안 맞아요" }), t)));
     nmFit.append(ul);
+    const noConsent = [m, w].filter((r) => !hasConsent(r));
+    if (noConsent.length) {
+      nmFit.append(el("p", { class: "warn", text: `${noConsent.map((r) => r.nickname).join(", ")}님은 새 개인정보 동의를 아직 받지 않았어요. 동의를 받은 뒤 소개해 주세요.` }));
+    }
+    const expired = [m, w].filter(isExpired);
+    if (expired.length) {
+      nmFit.append(el("p", { class: "warn", text: `${expired.map((r) => r.nickname).join(", ")}님은 보관 기한(6개월)이 지났어요. 재동의를 받거나 삭제해 주세요.` }));
+    }
     const waiting = matches.filter((x) => x.man_id === m.id && OPEN.includes(x.stage)).length;
     if (waiting) nmFit.append(el("p", { class: "hint", text: `이 남성분은 이미 답을 기다리는 제안이 ${waiting}건 있어요.` }));
     if (matches.some((x) => x.man_id === m.id && x.woman_id === w.id)) {

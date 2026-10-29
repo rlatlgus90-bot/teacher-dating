@@ -62,6 +62,10 @@ create table if not exists public.contacts (
 );
 
 alter table public.contacts add column if not exists rules_agreed boolean not null default false;
+-- 2026-10-29 개정 동의: 제3자 제공 + 동의 버전 기록 (v2 = 신청서, v2-카톡 = 기존 회원 재동의)
+alter table public.contacts add column if not exists third_party_agreed boolean not null default false;
+alter table public.contacts add column if not exists consent_version text;
+alter table public.contacts add column if not exists consent_at timestamptz;
 
 -- 피드백
 create table if not exists public.feedback (
@@ -137,6 +141,11 @@ declare
 begin
   if v_id is null then
     raise exception '이력서 번호가 없어요.';
+  end if;
+
+  if coalesce((p_contact ->> 'privacy_agreed')::boolean, false) is not true
+     or coalesce((p_contact ->> 'third_party_agreed')::boolean, false) is not true then
+    raise exception '개인정보 수집·이용과 제3자 제공에 모두 동의해야 제출할 수 있어요.';
   end if;
 
   -- 생년월일이 있으면 서버에서 만 나이를 다시 계산해요 (한국 시간 기준)
@@ -224,14 +233,17 @@ begin
     v_birth
   );
 
-  insert into public.contacts (resume_id, contact, email, is_adult, privacy_agreed, rules_agreed)
+  insert into public.contacts (resume_id, contact, email, is_adult, privacy_agreed, rules_agreed, third_party_agreed, consent_version, consent_at)
   values (
     v_id,
     trim(p_contact ->> 'contact'),
     nullif(trim(p_contact ->> 'email'), ''),
     coalesce((p_contact ->> 'is_adult')::boolean, false),
     coalesce((p_contact ->> 'privacy_agreed')::boolean, false),
-    coalesce((p_contact ->> 'rules_agreed')::boolean, false)
+    coalesce((p_contact ->> 'rules_agreed')::boolean, false),
+    true,
+    'v2',
+    now()
   );
 
   return v_id;

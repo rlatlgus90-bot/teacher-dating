@@ -364,6 +364,7 @@
         email: fd.get("email") || "",
         is_adult: $("#is_adult").checked,
         privacy_agreed: $("#privacy_agreed").checked,
+        third_party_agreed: $("#third_party_agreed").checked,
         rules_agreed: $("#rules_agreed").checked,
       };
 
@@ -384,7 +385,7 @@
   // ---------- 임시 저장 ----------
   // 이 브라우저에만 저장돼요. 사진·연락처·동의 항목은 저장하지 않아요.
   const DRAFT_KEY = "teacher-dating-draft-v1";
-  const DRAFT_SKIP = new Set(["contact", "email", "is_adult", "privacy_agreed", "rules_agreed"]);
+  const DRAFT_SKIP = new Set(["contact", "email", "is_adult", "privacy_agreed", "third_party_agreed", "rules_agreed"]);
   const draftNotice = $("#draft-notice");
 
   function draftFields() {
